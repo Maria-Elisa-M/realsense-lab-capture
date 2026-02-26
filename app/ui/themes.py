@@ -315,6 +315,27 @@ QMessageBox {{
     color: {p['text']};
     font-size: 14px;
 }}
+
+/* ── Radio buttons ─── */
+QRadioButton {{
+    color: {p['text']};
+    font-size: 14px;
+    spacing: 7px;
+}}
+QRadioButton::indicator {{
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 2px solid {p['border']};
+    background-color: {p['surface']};
+}}
+QRadioButton::indicator:hover {{
+    border-color: {p['accent']};
+}}
+QRadioButton::indicator:checked {{
+    background-color: {p['accent']};
+    border-color: {p['accent']};
+}}
 """
 
 

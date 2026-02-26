@@ -62,6 +62,10 @@ class AdminDashboardScreen(QWidget):
         elif index == 2:
             self.tab_settings.refresh()
 
+    def _sync_theme_radios(self, key: str) -> None:
+        """Propagate theme change to the settings tab radio buttons."""
+        self.tab_settings._sync_theme_radios(key)
+
     def _on_logout(self) -> None:
         mw = self.window()
         if hasattr(mw, "logout"):

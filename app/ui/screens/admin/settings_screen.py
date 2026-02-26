@@ -3,11 +3,11 @@ import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QFormLayout, QLineEdit,
     QPushButton, QHBoxLayout, QLabel, QMessageBox,
-    QFileDialog, QSpinBox
+    QFileDialog, QSpinBox, QRadioButton, QButtonGroup
 )
 from PyQt6.QtCore import Qt
 from app.config.settings import load_settings, save_settings, AppSettings
-from app.ui.themes import THEME_KEYS, THEME_NAMES, palette, load_theme
+from app.ui.themes import THEME_KEYS, THEME_NAMES, load_theme
 
 logger = logging.getLogger(__name__)
 
@@ -86,14 +86,15 @@ class SettingsScreen(QWidget):
         # Theme selector
         form.addRow(QLabel("<b>Appearance</b>"))
         theme_row = QHBoxLayout()
-        self._theme_btns: dict[str, QPushButton] = {}
+        theme_row.setSpacing(24)
+        self._theme_radios: dict[str, QRadioButton] = {}
+        self._theme_group = QButtonGroup(self)
         for key in THEME_KEYS:
-            p = palette(key)
-            btn = QPushButton(THEME_NAMES[key])
-            btn.setCheckable(True)
-            btn.clicked.connect(lambda checked, k=key: self._on_theme_clicked(k))
-            self._theme_btns[key] = btn
-            theme_row.addWidget(btn)
+            radio = QRadioButton(THEME_NAMES[key])
+            radio.toggled.connect(lambda checked, k=key: self._on_theme_clicked(k) if checked else None)
+            self._theme_group.addButton(radio)
+            self._theme_radios[key] = radio
+            theme_row.addWidget(radio)
         theme_row.addStretch()
         form.addRow("Theme:", theme_row)
 
@@ -109,18 +110,18 @@ class SettingsScreen(QWidget):
     def _on_theme_clicked(self, key: str) -> None:
         from app.ui.themes import apply_theme
         apply_theme(key)
-        self._update_theme_btns(key)
-        # Sync the theme bar in the main window if visible
         mw = self.window()
         if hasattr(mw, "_on_theme_selected"):
             mw._on_theme_selected(key)
 
-    def _update_theme_btns(self, active_key: str) -> None:
-        for key, btn in self._theme_btns.items():
-            btn.setChecked(key == active_key)
+    def _sync_theme_radios(self, active_key: str) -> None:
+        for key, radio in self._theme_radios.items():
+            radio.blockSignals(True)
+            radio.setChecked(key == active_key)
+            radio.blockSignals(False)
 
     def refresh(self) -> None:
-        self._update_theme_btns(load_theme())
+        self._sync_theme_radios(load_theme())
         s = load_settings()
         self.input_output_dir.setText(s.output_directory)
         self.spin_color_w.setValue(s.color_width)
