@@ -1,0 +1,10 @@
+# Python 3.10 or 3.11 required — pyrealsense2 has no PyPI wheels for Python 3.12+
+# Use: py -3.11 -m venv venv && venv\Scripts\activate && pip install -r requirements.txt
+#
+# Prerequisite: Intel RealSense SDK 2.0 must be installed BEFORE running pip install.
+# Download: https://github.com/IntelRealSense/librealsense/releases
+
+PyQt6>=6.6.0
+pyrealsense2>=2.55.1
+bcrypt>=4.1.2
+numpy>=1.26.0

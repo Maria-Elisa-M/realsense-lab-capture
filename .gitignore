@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# PyInstaller build output
+build/
+dist/
+
+# Database (auto-created on first run — do not commit)
+data/video_capture.db
+
+# Logs
+logs/*.log
+logs/*.log.*
+
+# Recordings (large binary files — never commit)
+recordings/
+
+# Installer output
+installer/output/
+
+# Generated icon (reproducible from script)
+assets/icon.ico
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
+*.sublime-project
+*.sublime-workspace
+
+# Secrets / env
+.env
+*.env
