@@ -252,8 +252,7 @@ class RecordingScreen(QWidget):
     # ------------------------------------------------------------------ #
 
     def _begin_recording(self, rec_type: str) -> None:
-        self._stop_preview()
-        self.preview.show_recording(rec_type)
+        self._stop_preview()          # free the pipeline for the recording worker
 
         settings = load_settings()
         file_path = build_output_path(
@@ -270,6 +269,8 @@ class RecordingScreen(QWidget):
         else:
             self._data_recording = rec
 
+        preview_mode = "data" if rec_type == "data" else "calibration"
+
         self._rec_worker = RecordingWorker(
             file_path=file_path,
             color_width=settings.color_width,
@@ -281,10 +282,13 @@ class RecordingScreen(QWidget):
             infrared_width=settings.infrared_width,
             infrared_height=settings.infrared_height,
             infrared_fps=settings.infrared_fps,
+            preview_mode=preview_mode,
+            preview_fps=settings.preview_fps,
         )
         self._rec_thread = QThread()
         self._rec_worker.moveToThread(self._rec_thread)
         self._rec_thread.started.connect(self._rec_worker.run)
+        self._rec_worker.frame_ready.connect(self.preview.set_frame)
         self._rec_worker.recording_stopped.connect(self._on_recording_stopped)
         self._rec_worker.error_occurred.connect(self._on_recording_error)
         self._rec_thread.start()
@@ -313,6 +317,15 @@ class RecordingScreen(QWidget):
                 f"Calibration: {duration:.1f}s")
             self._set_state(RecordingState.IDLE_CALIBRATION_DONE)
             self._start_preview(PreviewMode.CALIBRATION)
+
+            reply = QMessageBox.question(
+                self, "Calibration Complete",
+                f"Calibration recorded successfully ({duration:.1f} s).\n\n"
+                "Start data recording now?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self._start_data()
 
         elif self._state == RecordingState.RECORDING_DATA:
             if self._data_recording:

@@ -7,6 +7,7 @@ from app.auth import auth_service
 from app.database.models import Session, Subject
 from app.ui.screens.login_screen import LoginScreen
 from app.ui.screens.subject_select_screen import SubjectSelectScreen
+from app.ui.screens.session_history_screen import SessionHistoryScreen
 from app.ui.screens.recording_screen import RecordingScreen
 from app.ui.screens.session_review_screen import SessionReviewScreen
 from app.ui.screens.admin.admin_dashboard_screen import AdminDashboardScreen
@@ -14,11 +15,12 @@ from app.ui.screens.admin.admin_dashboard_screen import AdminDashboardScreen
 logger = logging.getLogger(__name__)
 
 # Screen index constants
-IDX_LOGIN = 0
-IDX_SUBJECT_SELECT = 1
-IDX_RECORDING = 2
-IDX_SESSION_REVIEW = 3
-IDX_ADMIN = 4
+IDX_LOGIN           = 0
+IDX_SUBJECT_SELECT  = 1
+IDX_SESSION_HISTORY = 2
+IDX_RECORDING       = 3
+IDX_SESSION_REVIEW  = 4
+IDX_ADMIN           = 5
 
 
 class MainWindow(QMainWindow):
@@ -32,17 +34,19 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self._stack)
 
         # Instantiate screens
-        self._login = LoginScreen()
-        self._subject_select = SubjectSelectScreen()
-        self._recording = RecordingScreen()
-        self._session_review = SessionReviewScreen()
-        self._admin = AdminDashboardScreen()
+        self._login           = LoginScreen()
+        self._subject_select  = SubjectSelectScreen()
+        self._session_history = SessionHistoryScreen()
+        self._recording       = RecordingScreen()
+        self._session_review  = SessionReviewScreen()
+        self._admin           = AdminDashboardScreen()
 
-        self._stack.addWidget(self._login)          # 0
-        self._stack.addWidget(self._subject_select) # 1
-        self._stack.addWidget(self._recording)      # 2
-        self._stack.addWidget(self._session_review) # 3
-        self._stack.addWidget(self._admin)          # 4
+        self._stack.addWidget(self._login)           # 0
+        self._stack.addWidget(self._subject_select)  # 1
+        self._stack.addWidget(self._session_history) # 2
+        self._stack.addWidget(self._recording)       # 3
+        self._stack.addWidget(self._session_review)  # 4
+        self._stack.addWidget(self._admin)           # 5
 
         # Wire signals
         self._login.login_successful.connect(self._on_login_successful)
@@ -67,7 +71,14 @@ class MainWindow(QMainWindow):
             self._stack.setCurrentIndex(IDX_SUBJECT_SELECT)
 
     def _on_subject_selected(self, subject: Subject) -> None:
+        """Subject picked — show session history before starting a new recording."""
         logger.info("Subject selected: %s", subject.subject_code)
+        self._session_history.load_subject(subject)
+        self._stack.setCurrentIndex(IDX_SESSION_HISTORY)
+
+    def start_recording(self, subject: Subject) -> None:
+        """Called by SessionHistoryScreen 'New Session' button."""
+        logger.info("Starting new recording session for: %s", subject.subject_code)
         self._recording.setup_session(subject)
         self._stack.setCurrentIndex(IDX_RECORDING)
 
@@ -85,7 +96,6 @@ class MainWindow(QMainWindow):
 
     def logout(self) -> None:
         logger.info("Logging out.")
-        # Teardown recording if active
         try:
             self._recording.teardown()
         except Exception:

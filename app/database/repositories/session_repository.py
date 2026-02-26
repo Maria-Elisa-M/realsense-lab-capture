@@ -65,3 +65,38 @@ def list_for_subject(subject_id: int) -> List[Session]:
         return [_row_to_session(r) for r in rows]
     finally:
         conn.close()
+
+
+def list_with_recordings_for_subject(subject_id: int) -> List[dict]:
+    """Return all sessions + recordings for a subject, enriched with operator username.
+
+    Each row in the result is a dict with keys:
+      session_id, session_started, session_ended, operator,
+      rec_id, recording_type, file_path, duration_seconds, file_size_bytes
+    Rows with no recordings still appear (rec_id will be None).
+    """
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            """
+            SELECT
+                s.id          AS session_id,
+                s.started_at  AS session_started,
+                s.ended_at    AS session_ended,
+                u.username    AS operator,
+                r.id          AS rec_id,
+                r.recording_type,
+                r.file_path,
+                r.duration_seconds,
+                r.file_size_bytes
+            FROM sessions s
+            JOIN users u ON u.id = s.operator_id
+            LEFT JOIN recordings r ON r.session_id = s.id
+            WHERE s.subject_id = ?
+            ORDER BY s.started_at DESC, r.recording_type
+            """,
+            (subject_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()

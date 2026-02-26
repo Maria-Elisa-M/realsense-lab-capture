@@ -91,7 +91,15 @@ class RecordingControls(QWidget):
 
         layout.addWidget(self._separator())
 
-        # ── Elapsed timer ─────────────────────────────────────────────── #
+        # ── Recording indicator + elapsed timer ───────────────────────── #
+        self.lbl_rec_indicator = QLabel("● REC")
+        self.lbl_rec_indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.lbl_rec_indicator.setStyleSheet(
+            "color: #ff4444; font-weight: bold; font-size: 13px; letter-spacing: 2px;"
+        )
+        self.lbl_rec_indicator.setVisible(False)
+        layout.addWidget(self.lbl_rec_indicator)
+
         self.lbl_elapsed = QLabel("00:00")
         self.lbl_elapsed.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_elapsed.setObjectName("elapsed_label")
@@ -140,11 +148,13 @@ class RecordingControls(QWidget):
     def start_timer(self) -> None:
         self._elapsed_seconds = 0
         self._update_label()
+        self.lbl_rec_indicator.setVisible(True)
         self.lbl_elapsed.setVisible(True)
         self._timer.start()
 
     def stop_timer(self) -> None:
         self._timer.stop()
+        self.lbl_rec_indicator.setVisible(False)
         self.lbl_elapsed.setVisible(False)
 
     def _tick(self) -> None:

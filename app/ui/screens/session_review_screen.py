@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 import app.database.repositories.recording_repository as recording_repo
 from app.database.models import Session, Subject
+from app.utils.viewer_utils import open_in_app_viewer
 
 
 class SessionReviewScreen(QWidget):
@@ -28,13 +29,18 @@ class SessionReviewScreen(QWidget):
         self.lbl_info = QLabel()
         layout.addWidget(self.lbl_info)
 
-        self.table = QTableWidget(0, 5)
+        self.table = QTableWidget(0, 6)
         self.table.setHorizontalHeaderLabels(
-            ["Type", "Started", "Duration (s)", "File Size", "File Path"]
+            ["Type", "Started", "Duration", "File Size", "File Path", ""]
         )
         self.table.horizontalHeader().setSectionResizeMode(
             4, QHeaderView.ResizeMode.Stretch
         )
+        self.table.setColumnWidth(0, 110)
+        self.table.setColumnWidth(1, 160)
+        self.table.setColumnWidth(2, 90)
+        self.table.setColumnWidth(3, 90)
+        self.table.setColumnWidth(5, 110)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         layout.addWidget(self.table)
@@ -68,12 +74,22 @@ class SessionReviewScreen(QWidget):
             size_str = ""
             if rec.file_size_bytes is not None:
                 size_str = f"{rec.file_size_bytes / (1024*1024):.1f} MB"
-            dur_str = f"{rec.duration_seconds:.1f}" if rec.duration_seconds else "—"
+            dur_str = f"{rec.duration_seconds:.1f}s" if rec.duration_seconds else "—"
+
             self.table.setItem(row, 0, QTableWidgetItem(rec.recording_type.capitalize()))
             self.table.setItem(row, 1, QTableWidgetItem(rec.started_at or "—"))
             self.table.setItem(row, 2, QTableWidgetItem(dur_str))
             self.table.setItem(row, 3, QTableWidgetItem(size_str))
             self.table.setItem(row, 4, QTableWidgetItem(rec.file_path))
+
+            btn_open = QPushButton("Open in Viewer")
+            btn_open.setObjectName("btn_secondary")
+            file_path = rec.file_path
+            btn_open.clicked.connect(
+                lambda checked, fp=file_path: open_in_app_viewer(fp, self)
+            )
+            btn_open.setEnabled(os.path.exists(rec.file_path))
+            self.table.setCellWidget(row, 5, btn_open)
 
     def _go_new_session(self) -> None:
         mw = self.window()
