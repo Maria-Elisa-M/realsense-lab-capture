@@ -1,9 +1,8 @@
 """Dialog for creating a new subject."""
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QFormLayout, QLineEdit,
-    QTextEdit, QPushButton, QHBoxLayout, QLabel, QDialogButtonBox
+    QTextEdit, QLabel, QDialogButtonBox
 )
-from PyQt6.QtCore import Qt
 from app.utils.validators import validate_subject_code
 import app.database.repositories.subject_repository as subject_repo
 from app.auth.auth_service import current_user
@@ -19,22 +18,19 @@ class SubjectFormDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("New Subject")
-        self.setMinimumWidth(400)
+        self.setMinimumWidth(380)
         self.created_subject: Subject | None = None
 
         layout = QVBoxLayout(self)
 
         form = QFormLayout()
         self.input_code = QLineEdit()
-        self.input_code.setPlaceholderText("e.g. LAB-001")
-        self.input_name = QLineEdit()
-        self.input_name.setPlaceholderText("Full name or descriptor")
+        self.input_code.setPlaceholderText("e.g. P001, subject-42, JD_2026")
         self.input_notes = QTextEdit()
         self.input_notes.setPlaceholderText("Optional notes")
         self.input_notes.setMaximumHeight(80)
 
-        form.addRow("Subject Code*:", self.input_code)
-        form.addRow("Subject Name*:", self.input_name)
+        form.addRow("Subject ID*:", self.input_code)
         form.addRow("Notes:", self.input_notes)
         layout.addLayout(form)
 
@@ -51,21 +47,16 @@ class SubjectFormDialog(QDialog):
         layout.addWidget(buttons)
 
     def _on_accept(self) -> None:
-        code = self.input_code.text().strip().upper()
-        name = self.input_name.text().strip()
+        code = self.input_code.text().strip()
         notes = self.input_notes.toPlainText().strip() or None
 
         err = validate_subject_code(code)
         if err:
             self._show_error(err)
             return
-        if not name:
-            self._show_error("Subject name is required.")
-            return
 
-        existing = subject_repo.get_by_code(code)
-        if existing:
-            self._show_error(f"Subject code '{code}' already exists.")
+        if subject_repo.get_by_code(code):
+            self._show_error(f"Subject ID '{code}' already exists.")
             return
 
         user = current_user()
@@ -73,7 +64,7 @@ class SubjectFormDialog(QDialog):
             self._show_error("Not authenticated.")
             return
 
-        self.created_subject = subject_repo.create(name, code, user.id, notes)
+        self.created_subject = subject_repo.create(code, user.id, notes)
         self.accept()
 
     def _show_error(self, message: str) -> None:

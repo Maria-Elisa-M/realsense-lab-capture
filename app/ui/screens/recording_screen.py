@@ -112,7 +112,7 @@ class RecordingScreen(QWidget):
         self._calibration_recording = None
         self._data_recording = None
         self.lbl_subject.setText(
-            f"Subject: {subject.subject_code} — {subject.subject_name}"
+            f"Subject: {subject.subject_code}"
         )
         self._set_state(RecordingState.IDLE_NO_CALIBRATION)
         self._start_preview()

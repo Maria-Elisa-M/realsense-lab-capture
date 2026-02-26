@@ -72,7 +72,7 @@ class SubjectSelectScreen(QWidget):
             self._subjects = subject_repo.list_all()
         self.list_widget.clear()
         for s in self._subjects:
-            item = QListWidgetItem(f"{s.subject_code} — {s.subject_name}")
+            item = QListWidgetItem(s.subject_code)
             item.setData(Qt.ItemDataRole.UserRole, s)
             self.list_widget.addItem(item)
 

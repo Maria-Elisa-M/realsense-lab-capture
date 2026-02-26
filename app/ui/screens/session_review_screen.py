@@ -56,7 +56,7 @@ class SessionReviewScreen(QWidget):
         self._session = session
         self._subject = subject
         self.lbl_info.setText(
-            f"Subject: {subject.subject_code} — {subject.subject_name}  |  "
+            f"Subject: {subject.subject_code}  |  "
             f"Session ID: {session.id}  |  Started: {session.started_at}"
         )
         self._populate_table(session.id)

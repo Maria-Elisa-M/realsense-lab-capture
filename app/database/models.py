@@ -16,8 +16,8 @@ class User:
 @dataclass
 class Subject:
     id: int
-    subject_name: str
     subject_code: str
+    subject_name: Optional[str]
     notes: Optional[str]
     created_at: str
     created_by: int

@@ -5,12 +5,13 @@ import re
 def validate_subject_code(code: str) -> str:
     """Return error message or empty string if valid.
 
-    Subject codes must match LAB-NNN format (e.g. LAB-001).
+    Subject codes may contain letters, digits, hyphens, and underscores.
+    They are used directly in file paths so special characters are not allowed.
     """
     if not code:
-        return "Subject code is required."
-    if not re.match(r'^[A-Z]{2,6}-\d{3,6}$', code):
-        return "Subject code must match pattern: LAB-001 (letters, dash, digits)."
+        return "Subject ID is required."
+    if not re.match(r'^[A-Za-z0-9_\-]+$', code):
+        return "Subject ID may only contain letters, digits, hyphens, and underscores."
     return ""
 
 

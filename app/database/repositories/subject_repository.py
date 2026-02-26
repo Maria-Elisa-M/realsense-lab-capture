@@ -8,8 +8,8 @@ from app.database.models import Subject
 def _row_to_subject(row: sqlite3.Row) -> Subject:
     return Subject(
         id=row["id"],
-        subject_name=row["subject_name"],
         subject_code=row["subject_code"],
+        subject_name=row["subject_name"],
         notes=row["notes"],
         created_at=row["created_at"],
         created_by=row["created_by"],
@@ -49,14 +49,13 @@ def list_all() -> List[Subject]:
         conn.close()
 
 
-def create(subject_name: str, subject_code: str, created_by: int,
+def create(subject_code: str, created_by: int,
            notes: Optional[str] = None) -> Subject:
     conn = get_connection()
     try:
         cursor = conn.execute(
-            "INSERT INTO subjects (subject_name, subject_code, notes, created_by) "
-            "VALUES (?, ?, ?, ?)",
-            (subject_name, subject_code, notes, created_by),
+            "INSERT INTO subjects (subject_code, notes, created_by) VALUES (?, ?, ?)",
+            (subject_code, notes, created_by),
         )
         conn.commit()
         row = conn.execute(
@@ -67,12 +66,12 @@ def create(subject_name: str, subject_code: str, created_by: int,
         conn.close()
 
 
-def update(subject_id: int, subject_name: str, notes: Optional[str]) -> None:
+def update(subject_id: int, notes: Optional[str]) -> None:
     conn = get_connection()
     try:
         conn.execute(
-            "UPDATE subjects SET subject_name = ?, notes = ? WHERE id = ?",
-            (subject_name, notes, subject_id),
+            "UPDATE subjects SET notes = ? WHERE id = ?",
+            (notes, subject_id),
         )
         conn.commit()
     finally:
@@ -84,9 +83,9 @@ def search(query: str) -> List[Subject]:
     try:
         pattern = f"%{query}%"
         rows = conn.execute(
-            "SELECT * FROM subjects WHERE subject_name LIKE ? OR subject_code LIKE ? "
+            "SELECT * FROM subjects WHERE subject_code LIKE ? "
             "ORDER BY subject_code",
-            (pattern, pattern),
+            (pattern,),
         ).fetchall()
         return [_row_to_subject(r) for r in rows]
     finally:
