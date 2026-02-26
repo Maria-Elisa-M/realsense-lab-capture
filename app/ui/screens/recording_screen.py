@@ -1,4 +1,4 @@
-"""Recording screen — state machine + preview + recording workers."""
+"""Recording screen — state machine + left control panel + mode-aware preview."""
 import logging
 from datetime import datetime, timezone
 from enum import Enum, auto
@@ -7,7 +7,6 @@ from PyQt6.QtWidgets import (
     QPushButton, QMessageBox, QSizePolicy
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSlot, pyqtSignal
-from PyQt6.QtGui import QImage
 
 from app.database.models import Subject, Session, Recording
 import app.database.repositories.session_repository as session_repo
@@ -15,7 +14,7 @@ import app.database.repositories.recording_repository as recording_repo
 from app.auth.auth_service import current_user
 from app.config.settings import load_settings
 from app.utils.file_utils import build_output_path
-from app.camera.preview_worker import PreviewWorker
+from app.camera.preview_worker import PreviewWorker, PreviewMode
 from app.camera.recording_worker import RecordingWorker
 from app.ui.widgets.camera_preview_widget import CameraPreviewWidget
 from app.ui.widgets.recording_controls import RecordingControls
@@ -31,10 +30,18 @@ class RecordingState(Enum):
     BOTH_DONE = auto()
 
 
-class RecordingScreen(QWidget):
-    """Main recording screen managing the 5-state recording flow."""
+# Which preview mode to use for each state
+_STATE_PREVIEW_MODE = {
+    RecordingState.IDLE_NO_CALIBRATION:   PreviewMode.CALIBRATION,
+    RecordingState.RECORDING_CALIBRATION: PreviewMode.CALIBRATION,
+    RecordingState.IDLE_CALIBRATION_DONE: PreviewMode.CALIBRATION,
+    RecordingState.RECORDING_DATA:        PreviewMode.DATA,
+    RecordingState.BOTH_DONE:             PreviewMode.DATA,
+}
 
-    session_finished = pyqtSignal(object)  # emits Session on finish
+
+class RecordingScreen(QWidget):
+    session_finished = pyqtSignal(object)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -43,55 +50,62 @@ class RecordingScreen(QWidget):
         self._state = RecordingState.IDLE_NO_CALIBRATION
         self._calibration_recording: Recording | None = None
         self._data_recording: Recording | None = None
+        self._current_preview_mode = PreviewMode.CALIBRATION
 
-        # Thread management
         self._preview_thread: QThread | None = None
         self._preview_worker: PreviewWorker | None = None
         self._rec_thread: QThread | None = None
         self._rec_worker: RecordingWorker | None = None
-        self._rec_file_path: str = ""
 
         self._build_ui()
 
     def _build_ui(self) -> None:
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(8)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
-        # Header
-        header = QHBoxLayout()
+        # ── Header bar ─────────────────────────────────────────────────── #
+        header = QWidget()
+        header.setObjectName("recording_header")
+        header.setFixedHeight(48)
+        header_layout = QHBoxLayout(header)
+        header_layout.setContentsMargins(16, 0, 16, 0)
+
         self.lbl_subject = QLabel("Subject: —")
         self.lbl_subject.setObjectName("subject_label")
-        self.lbl_state = QLabel()
-        self.lbl_state.setObjectName("state_label")
+
+        self.lbl_preview_hint = QLabel("")
+        self.lbl_preview_hint.setStyleSheet("color: #667799; font-size: 11px;")
+        self.lbl_preview_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         self.btn_logout = QPushButton("Logout")
         self.btn_logout.setObjectName("btn_danger")
         self.btn_logout.clicked.connect(self._on_logout)
-        header.addWidget(self.lbl_subject)
-        header.addStretch()
-        header.addWidget(self.lbl_state)
-        header.addWidget(self.btn_logout)
-        layout.addLayout(header)
 
-        # Camera preview
-        self.preview = CameraPreviewWidget()
-        self.preview.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        layout.addWidget(self.preview)
+        header_layout.addWidget(self.lbl_subject)
+        header_layout.addStretch()
+        header_layout.addWidget(self.lbl_preview_hint)
+        header_layout.addStretch()
+        header_layout.addWidget(self.btn_logout)
+        root.addWidget(header)
 
-        # Status bar
-        status_row = QHBoxLayout()
-        self.lbl_calibration_status = QLabel("Calibration: Not recorded")
-        self.lbl_data_status = QLabel("Data: Not recorded")
-        status_row.addWidget(self.lbl_calibration_status)
-        status_row.addStretch()
-        status_row.addWidget(self.lbl_data_status)
-        layout.addLayout(status_row)
+        # ── Main content: left panel + preview ─────────────────────────── #
+        content = QHBoxLayout()
+        content.setContentsMargins(0, 0, 0, 0)
+        content.setSpacing(0)
 
-        # Controls
         self.controls = RecordingControls()
-        layout.addWidget(self.controls)
+        content.addWidget(self.controls)
 
-        # Wire up buttons
+        self.preview = CameraPreviewWidget()
+        self.preview.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
+        )
+        content.addWidget(self.preview)
+
+        root.addLayout(content)
+
+        # Wire buttons
         self.controls.btn_start_calibration.clicked.connect(self._start_calibration)
         self.controls.btn_stop_calibration.clicked.connect(self._stop_calibration)
         self.controls.btn_restart_calibration.clicked.connect(self._restart_calibration)
@@ -105,20 +119,18 @@ class RecordingScreen(QWidget):
     # ------------------------------------------------------------------ #
 
     def setup_session(self, subject: Subject) -> None:
-        """Called by main_window before showing this screen."""
         self._subject = subject
         user = current_user()
         self._session = session_repo.create(subject.id, user.id)
         self._calibration_recording = None
         self._data_recording = None
-        self.lbl_subject.setText(
-            f"Subject: {subject.subject_code}"
-        )
+        self.controls.lbl_calibration_status.setText("Calibration: —")
+        self.controls.lbl_data_status.setText("Data: —")
+        self.lbl_subject.setText(f"Subject: {subject.subject_code}")
         self._set_state(RecordingState.IDLE_NO_CALIBRATION)
-        self._start_preview()
+        self._start_preview(PreviewMode.CALIBRATION)
 
     def teardown(self) -> None:
-        """Stop all workers — called when navigating away."""
         self._stop_preview()
         self._stop_recording_worker()
 
@@ -129,32 +141,39 @@ class RecordingScreen(QWidget):
     def _set_state(self, state: RecordingState) -> None:
         self._state = state
         c = self.controls
-        # Hide all first
+
         for btn in [c.btn_start_calibration, c.btn_stop_calibration,
                     c.btn_restart_calibration, c.btn_start_data,
                     c.btn_stop_data, c.btn_restart_data, c.btn_finish]:
             btn.setVisible(False)
 
-        state_labels = {
-            RecordingState.IDLE_NO_CALIBRATION: "Awaiting Calibration",
-            RecordingState.RECORDING_CALIBRATION: "● Recording Calibration",
-            RecordingState.IDLE_CALIBRATION_DONE: "Calibration Done",
-            RecordingState.RECORDING_DATA: "● Recording Data",
-            RecordingState.BOTH_DONE: "Session Complete",
+        labels = {
+            RecordingState.IDLE_NO_CALIBRATION:   "Awaiting\nCalibration",
+            RecordingState.RECORDING_CALIBRATION: "Recording\nCalibration",
+            RecordingState.IDLE_CALIBRATION_DONE: "Calibration\nComplete",
+            RecordingState.RECORDING_DATA:        "Recording\nData",
+            RecordingState.BOTH_DONE:             "Session\nComplete",
         }
-        self.lbl_state.setText(state_labels.get(state, ""))
+        c.lbl_state.setText(labels.get(state, ""))
+
+        hints = {
+            RecordingState.IDLE_NO_CALIBRATION:   "Preview: RGB | Depth",
+            RecordingState.RECORDING_CALIBRATION: "Preview: RGB | Depth",
+            RecordingState.IDLE_CALIBRATION_DONE: "Preview: RGB | Depth",
+            RecordingState.RECORDING_DATA:        "Preview: Depth",
+            RecordingState.BOTH_DONE:             "Preview: Depth",
+        }
+        self.lbl_preview_hint.setText(hints.get(state, ""))
 
         if state == RecordingState.IDLE_NO_CALIBRATION:
             c.btn_start_calibration.setVisible(True)
         elif state == RecordingState.RECORDING_CALIBRATION:
             c.btn_stop_calibration.setVisible(True)
-            c.lbl_elapsed.setVisible(True)
         elif state == RecordingState.IDLE_CALIBRATION_DONE:
             c.btn_restart_calibration.setVisible(True)
             c.btn_start_data.setVisible(True)
         elif state == RecordingState.RECORDING_DATA:
             c.btn_stop_data.setVisible(True)
-            c.lbl_elapsed.setVisible(True)
         elif state == RecordingState.BOTH_DONE:
             c.btn_restart_calibration.setVisible(True)
             c.btn_restart_data.setVisible(True)
@@ -165,8 +184,8 @@ class RecordingScreen(QWidget):
     # ------------------------------------------------------------------ #
 
     def _start_calibration(self) -> None:
-        self._begin_recording("calibration")
         self._set_state(RecordingState.RECORDING_CALIBRATION)
+        self._begin_recording("calibration")
 
     def _stop_calibration(self) -> None:
         self._stop_recording_worker()
@@ -182,12 +201,13 @@ class RecordingScreen(QWidget):
         if self._calibration_recording:
             recording_repo.delete_by_id(self._calibration_recording.id)
             self._calibration_recording = None
-        self.lbl_calibration_status.setText("Calibration: Not recorded")
+        self.controls.lbl_calibration_status.setText("Calibration: —")
         self._set_state(RecordingState.IDLE_NO_CALIBRATION)
+        self._restart_preview_if_mode_changed(PreviewMode.CALIBRATION)
 
     def _start_data(self) -> None:
-        self._begin_recording("data")
         self._set_state(RecordingState.RECORDING_DATA)
+        self._begin_recording("data")
 
     def _stop_data(self) -> None:
         self._stop_recording_worker()
@@ -203,14 +223,14 @@ class RecordingScreen(QWidget):
         if self._data_recording:
             recording_repo.delete_by_id(self._data_recording.id)
             self._data_recording = None
-        self.lbl_data_status.setText("Data: Not recorded")
+        self.controls.lbl_data_status.setText("Data: —")
         self._set_state(RecordingState.IDLE_CALIBRATION_DONE)
+        self._restart_preview_if_mode_changed(PreviewMode.DATA)
 
     def _finish_session(self) -> None:
         if self._session:
             session_repo.close_session(self._session.id)
         self.teardown()
-        # Signal parent
         mw = self.window()
         if hasattr(mw, "on_session_finished"):
             mw.on_session_finished(self._session)
@@ -232,8 +252,8 @@ class RecordingScreen(QWidget):
     # ------------------------------------------------------------------ #
 
     def _begin_recording(self, rec_type: str) -> None:
-        """Stop preview, create DB record, start recording worker."""
         self._stop_preview()
+        self.preview.show_recording(rec_type)
 
         settings = load_settings()
         file_path = build_output_path(
@@ -242,7 +262,6 @@ class RecordingScreen(QWidget):
             self._session.id,
             rec_type,
         )
-        self._rec_file_path = file_path
         started_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         rec = recording_repo.create(self._session.id, rec_type, file_path, started_at)
@@ -286,57 +305,51 @@ class RecordingScreen(QWidget):
         ended_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         self.controls.stop_timer()
 
-        current_type = None
-        current_rec = None
         if self._state == RecordingState.RECORDING_CALIBRATION:
-            current_type = "calibration"
-            current_rec = self._calibration_recording
-        elif self._state == RecordingState.RECORDING_DATA:
-            current_type = "data"
-            current_rec = self._data_recording
-
-        if current_rec:
-            recording_repo.finalize(current_rec.id, ended_at, duration, file_path)
-
-        if current_type == "calibration":
-            self.lbl_calibration_status.setText(
-                f"Calibration: {duration:.1f}s — {file_path}"
-            )
+            if self._calibration_recording:
+                recording_repo.finalize(
+                    self._calibration_recording.id, ended_at, duration, file_path)
+            self.controls.lbl_calibration_status.setText(
+                f"Calibration: {duration:.1f}s")
             self._set_state(RecordingState.IDLE_CALIBRATION_DONE)
-        elif current_type == "data":
-            self.lbl_data_status.setText(
-                f"Data: {duration:.1f}s — {file_path}"
-            )
-            self._set_state(RecordingState.BOTH_DONE)
+            self._start_preview(PreviewMode.CALIBRATION)
 
-        # Restart preview after recording
-        self._start_preview()
+        elif self._state == RecordingState.RECORDING_DATA:
+            if self._data_recording:
+                recording_repo.finalize(
+                    self._data_recording.id, ended_at, duration, file_path)
+            self.controls.lbl_data_status.setText(f"Data: {duration:.1f}s")
+            self._set_state(RecordingState.BOTH_DONE)
+            self._start_preview(PreviewMode.DATA)
 
     @pyqtSlot(str)
     def _on_recording_error(self, message: str) -> None:
         logger.error("Recording error: %s", message)
         self.controls.stop_timer()
         QMessageBox.critical(self, "Recording Error", message)
-        # Return to appropriate idle state
         if self._calibration_recording and self._data_recording:
             self._set_state(RecordingState.BOTH_DONE)
+            self._start_preview(PreviewMode.DATA)
         elif self._calibration_recording:
             self._set_state(RecordingState.IDLE_CALIBRATION_DONE)
+            self._start_preview(PreviewMode.CALIBRATION)
         else:
             self._set_state(RecordingState.IDLE_NO_CALIBRATION)
-        self._start_preview()
+            self._start_preview(PreviewMode.CALIBRATION)
 
     # ------------------------------------------------------------------ #
     # Preview lifecycle                                                    #
     # ------------------------------------------------------------------ #
 
-    def _start_preview(self) -> None:
+    def _start_preview(self, mode: PreviewMode) -> None:
+        self._current_preview_mode = mode
         settings = load_settings()
         self._preview_worker = PreviewWorker(
             color_width=settings.color_width,
             color_height=settings.color_height,
             color_fps=settings.color_fps,
             preview_fps=settings.preview_fps,
+            mode=mode,
         )
         self._preview_thread = QThread()
         self._preview_worker.moveToThread(self._preview_thread)
@@ -353,6 +366,12 @@ class RecordingScreen(QWidget):
             self._preview_thread.wait(3000)
         self._preview_worker = None
         self._preview_thread = None
+
+    def _restart_preview_if_mode_changed(self, new_mode: PreviewMode) -> None:
+        """Restart preview only when the desired mode differs from the running one."""
+        if self._current_preview_mode != new_mode or self._preview_worker is None:
+            self._stop_preview()
+            self._start_preview(new_mode)
 
     @pyqtSlot(str)
     def _on_preview_error(self, message: str) -> None:

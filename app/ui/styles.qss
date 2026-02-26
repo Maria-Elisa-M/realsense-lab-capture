@@ -1,5 +1,52 @@
 /* Global stylesheet for RealSense Lab Capture */
 
+/* Recording left panel */
+QWidget#recording_panel {
+    background-color: #12122a;
+    border-right: 1px solid #0f3460;
+}
+
+/* Recording header bar */
+QWidget#recording_header {
+    background-color: #0f0f24;
+    border-bottom: 1px solid #0f3460;
+}
+
+/* Status detail labels in panel */
+QLabel#status_detail {
+    color: #8899bb;
+    font-size: 11px;
+    padding: 2px 0;
+}
+
+/* Record (green-tinted) button */
+QPushButton#btn_record {
+    background-color: #1b4a2a;
+    color: #80ffb0;
+    border: 1px solid #2a7a40;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: left;
+}
+QPushButton#btn_record:hover {
+    background-color: #256038;
+}
+
+/* Stop (red-tinted) button */
+QPushButton#btn_stop {
+    background-color: #4a1b1b;
+    color: #ffaaaa;
+    border: 1px solid #7a2a2a;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    text-align: left;
+}
+QPushButton#btn_stop:hover {
+    background-color: #602525;
+}
+
 QMainWindow, QWidget {
     background-color: #1a1a2e;
     color: #e0e0e0;
