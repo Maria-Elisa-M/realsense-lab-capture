@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from app.config.settings import load_settings, save_settings, AppSettings
+from app.ui.themes import THEME_KEYS, THEME_NAMES, palette, load_theme
 
 logger = logging.getLogger(__name__)
 
@@ -82,6 +83,20 @@ class SettingsScreen(QWidget):
 
         outer.addLayout(form)
 
+        # Theme selector
+        form.addRow(QLabel("<b>Appearance</b>"))
+        theme_row = QHBoxLayout()
+        self._theme_btns: dict[str, QPushButton] = {}
+        for key in THEME_KEYS:
+            p = palette(key)
+            btn = QPushButton(THEME_NAMES[key])
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, k=key: self._on_theme_clicked(k))
+            self._theme_btns[key] = btn
+            theme_row.addWidget(btn)
+        theme_row.addStretch()
+        form.addRow("Theme:", theme_row)
+
         btn_row = QHBoxLayout()
         btn_row.addStretch()
         btn_save = QPushButton("Save Settings")
@@ -91,7 +106,21 @@ class SettingsScreen(QWidget):
         outer.addLayout(btn_row)
         outer.addStretch()
 
+    def _on_theme_clicked(self, key: str) -> None:
+        from app.ui.themes import apply_theme
+        apply_theme(key)
+        self._update_theme_btns(key)
+        # Sync the theme bar in the main window if visible
+        mw = self.window()
+        if hasattr(mw, "_on_theme_selected"):
+            mw._on_theme_selected(key)
+
+    def _update_theme_btns(self, active_key: str) -> None:
+        for key, btn in self._theme_btns.items():
+            btn.setChecked(key == active_key)
+
     def refresh(self) -> None:
+        self._update_theme_btns(load_theme())
         s = load_settings()
         self.input_output_dir.setText(s.output_directory)
         self.spin_color_w.setValue(s.color_width)

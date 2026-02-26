@@ -54,11 +54,10 @@ def main() -> None:
     app.setApplicationName("RealSense Lab Capture")
     app.setOrganizationName("Lab")
 
-    # Stylesheet is bundled inside the frozen app — use __file__ path
-    qss_path = Path(__file__).parent / "app" / "ui" / "styles.qss"
-    if qss_path.exists():
-        app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
-        logger.debug("Stylesheet loaded from %s", qss_path)
+    from app.ui.themes import load_theme, get_current_qss
+    saved_theme = load_theme()
+    app.setStyleSheet(get_current_qss(saved_theme))
+    logger.debug("Theme applied: %s", saved_theme)
 
     window = MainWindow()
     window.show()

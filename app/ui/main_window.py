@@ -1,10 +1,11 @@
 """Main application window — QStackedWidget navigation controller."""
 import logging
-from PyQt6.QtWidgets import QMainWindow, QStackedWidget
+from PyQt6.QtWidgets import QMainWindow, QStackedWidget, QWidget, QHBoxLayout, QPushButton, QLabel, QVBoxLayout
 from PyQt6.QtCore import Qt
 
 from app.auth import auth_service
 from app.database.models import Session, Subject
+from app.ui.themes import apply_theme, load_theme, THEME_KEYS, THEME_NAMES, palette
 from app.ui.screens.login_screen import LoginScreen
 from app.ui.screens.subject_select_screen import SubjectSelectScreen
 from app.ui.screens.session_history_screen import SessionHistoryScreen
@@ -30,8 +31,17 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1000, 700)
         self.resize(1280, 800)
 
+        # Root widget: theme bar on top, then the screen stack
+        root = QWidget()
+        root_layout = QVBoxLayout(root)
+        root_layout.setContentsMargins(0, 0, 0, 0)
+        root_layout.setSpacing(0)
+        self.setCentralWidget(root)
+
+        root_layout.addWidget(self._build_theme_bar())
+
         self._stack = QStackedWidget()
-        self.setCentralWidget(self._stack)
+        root_layout.addWidget(self._stack)
 
         # Instantiate screens
         self._login           = LoginScreen()
@@ -53,6 +63,61 @@ class MainWindow(QMainWindow):
         self._subject_select.subject_selected.connect(self._on_subject_selected)
 
         self._stack.setCurrentIndex(IDX_LOGIN)
+
+    # ------------------------------------------------------------------ #
+    # Theme bar                                                            #
+    # ------------------------------------------------------------------ #
+
+    def _build_theme_bar(self) -> QWidget:
+        bar = QWidget()
+        bar.setFixedHeight(36)
+        bar.setStyleSheet("background-color: #080810; border-bottom: 1px solid #1a1a30;")
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(12, 4, 12, 4)
+        layout.setSpacing(6)
+
+        lbl = QLabel("Theme:")
+        lbl.setStyleSheet("color: #666688; font-size: 11px;")
+        layout.addWidget(lbl)
+
+        self._theme_btns: dict[str, QPushButton] = {}
+        current = load_theme()
+        for key in THEME_KEYS:
+            p = palette(key)
+            btn = QPushButton(THEME_NAMES[key])
+            btn.setFixedHeight(26)
+            btn.setCheckable(True)
+            btn.setChecked(key == current)
+            btn.clicked.connect(lambda checked, k=key: self._on_theme_selected(k))
+            self._theme_btns[key] = btn
+            layout.addWidget(btn)
+            self._style_theme_btn(btn, key == current, p["swatch"])
+
+        layout.addStretch()
+        return bar
+
+    def _style_theme_btn(self, btn: QPushButton, active: bool, swatch: str) -> None:
+        if active:
+            btn.setStyleSheet(
+                f"QPushButton {{ background-color: {swatch}; color: white; "
+                f"border: none; padding: 3px 12px; border-radius: 3px; "
+                f"font-size: 11px; font-weight: bold; }}"
+            )
+        else:
+            btn.setStyleSheet(
+                f"QPushButton {{ background-color: #1a1a2e; color: #888888; "
+                f"border: 1px solid #333355; padding: 3px 12px; border-radius: 3px; "
+                f"font-size: 11px; }} "
+                f"QPushButton:hover {{ background-color: #252545; color: {swatch}; "
+                f"border-color: {swatch}; }}"
+            )
+
+    def _on_theme_selected(self, key: str) -> None:
+        apply_theme(key)
+        for k, btn in self._theme_btns.items():
+            active = k == key
+            btn.setChecked(active)
+            self._style_theme_btn(btn, active, palette(k)["swatch"])
 
     # ------------------------------------------------------------------ #
     # Navigation                                                           #

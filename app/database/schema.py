@@ -66,6 +66,7 @@ DEFAULT_SETTINGS = [
     ("infrared_height", "720", "Infrared stream height in pixels"),
     ("infrared_fps", "30", "Infrared stream frames per second"),
     ("preview_fps", "15", "Preview display frames per second"),
+    ("theme", "deep_navy", "UI color theme (deep_navy | obsidian | slate_cyan)"),
 ]
 
 
