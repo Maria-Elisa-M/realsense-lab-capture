@@ -66,6 +66,7 @@ for %%P in (
     "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
     "C:\Program Files\Inno Setup 6\ISCC.exe"
     "C:\Program Files (x86)\Inno Setup 5\ISCC.exe"
+    "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
 ) do (
     if exist %%P set "ISCC=%%P"
 )

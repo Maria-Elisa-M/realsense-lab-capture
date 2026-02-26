@@ -1,0 +1,98 @@
+==============================================================
+  RealSense Lab Capture - Installation Guide
+==============================================================
+
+BEFORE YOU INSTALL
+------------------
+This application requires the Intel RealSense SDK to
+communicate with the camera. You MUST install it before
+or after installing this app, otherwise the camera will
+not work.
+
+--------------------------------------------------------------
+STEP 1 - Install the Intel RealSense SDK 2.0
+--------------------------------------------------------------
+
+1. Go to:
+   https://github.com/IntelRealSense/librealsense/releases
+
+2. Download the file named:
+   Intel.RealSense.SDK-WIN10-<version>.exe
+
+3. Run the installer and follow the on-screen instructions.
+
+4. Restart your computer after the SDK is installed.
+
+--------------------------------------------------------------
+STEP 2 - Install RealSense Lab Capture
+--------------------------------------------------------------
+
+1. Run this installer (RealSenseCapture_Setup_v1.0.0.exe).
+
+2. Follow the on-screen steps.
+
+3. Make sure "Create a desktop shortcut" is checked.
+
+4. Click Install.
+
+--------------------------------------------------------------
+STEP 3 - First Launch
+--------------------------------------------------------------
+
+1. Double-click the "RealSense Lab Capture" icon on your
+   desktop, or find it in the Start Menu.
+
+2. Log in with the default admin credentials:
+      Username: admin
+      Password: admin
+
+3. IMPORTANT: Change the admin password immediately.
+   Go to Admin Dashboard -> Users -> Change PW.
+
+4. To add operator accounts:
+   Go to Admin Dashboard -> Users -> Add User
+   Set the role to "Operator".
+
+5. To set where recordings are saved:
+   Go to Admin Dashboard -> Settings -> Output Directory
+   Click Browse and choose a folder.
+
+--------------------------------------------------------------
+STEP 4 - Connecting the Camera
+--------------------------------------------------------------
+
+1. Plug the Intel RealSense camera into a USB 3.0 port
+   (blue port). USB 2.0 ports will not work correctly.
+
+2. Wait a few seconds for Windows to recognise the device.
+
+3. Launch the app. The live preview should appear
+   automatically on the recording screen.
+
+--------------------------------------------------------------
+TROUBLESHOOTING
+--------------------------------------------------------------
+
+Camera not detected:
+  - Make sure the RealSense SDK is installed (Step 1).
+  - Use a USB 3.0 port (blue).
+  - Try unplugging and replugging the camera.
+  - Restart the application.
+
+Login not working:
+  - Default credentials are  admin / admin  (all lowercase).
+  - Contact your system administrator if the password
+    has been changed.
+
+App does not start:
+  - Make sure you are running Windows 10 or 11 (64-bit).
+  - Try right-clicking the shortcut and selecting
+    "Run as administrator".
+
+Recordings not saving:
+  - Check the Output Directory in Admin -> Settings.
+  - Make sure the folder exists and you have write access.
+
+==============================================================
+  For support, contact your system administrator.
+==============================================================

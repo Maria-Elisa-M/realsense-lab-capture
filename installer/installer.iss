@@ -22,8 +22,10 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
+; Show installation guide before install begins
+InfoBeforeFile=INSTALL_GUIDE.txt
 ; Create uninstaller
 Uninstallable=yes
 UninstallDisplayName={#AppName}
@@ -33,23 +35,28 @@ UninstallDisplayIcon={app}\{#AppExeName}
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon";   Description: "Create a &desktop shortcut";   GroupDescription: "Additional icons:"; Flags: checked
-Name: "startmenuicon"; Description: "Create a &Start Menu shortcut"; GroupDescription: "Additional icons:"; Flags: checked
+Name: "desktopicon";   Description: "Create a &desktop shortcut";   GroupDescription: "Additional icons:"
+Name: "startmenuicon"; Description: "Create a &Start Menu shortcut"; GroupDescription: "Additional icons:"
 
 [Files]
 ; The entire PyInstaller output folder
 Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Install the guide so users can read it any time from the Start Menu
+Source: "INSTALL_GUIDE.txt"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; Start Menu
-Name: "{group}\{#AppName}";       Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"
-Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
+Name: "{group}\{#AppName}";            Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"
+Name: "{group}\Installation Guide";    Filename: "{app}\INSTALL_GUIDE.txt"
+Name: "{group}\Uninstall {#AppName}";  Filename: "{uninstallexe}"
 
 ; Desktop shortcut (only if task selected)
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
 [Run]
-; Offer to launch immediately after install
+; Offer to open the guide immediately after install
+Filename: "{app}\INSTALL_GUIDE.txt"; Description: "View Installation Guide"; Flags: nowait postinstall skipifsilent shellexec
+; Offer to launch the app immediately after install
 Filename: "{app}\{#AppExeName}"; Description: "Launch {#AppName}"; Flags: nowait postinstall skipifsilent
 
 [UninstallDelete]
