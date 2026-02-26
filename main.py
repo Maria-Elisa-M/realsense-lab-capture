@@ -4,11 +4,11 @@ import logging
 import logging.handlers
 from pathlib import Path
 
-# Bootstrap logging before any app imports
+
 def _setup_logging() -> None:
-    log_dir = Path(__file__).parent / "logs"
-    log_dir.mkdir(exist_ok=True)
-    log_file = log_dir / "app.log"
+    from app.utils.app_dirs import LOG_DIR
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_file = LOG_DIR / "app.log"
 
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
@@ -18,7 +18,7 @@ def _setup_logging() -> None:
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
 
-    # Rotating file handler: 5 MB × 3 backups
+    # Rotating file handler: 5 MB x 3 backups
     fh = logging.handlers.RotatingFileHandler(
         log_file, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
     )
@@ -40,12 +40,9 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     from PyQt6.QtWidgets import QApplication
-    from PyQt6.QtCore import Qt
-
     from app.database.schema import init_db
     from app.ui.main_window import MainWindow
 
-    # Initialize database (creates tables and seeds defaults if needed)
     try:
         init_db()
         logger.info("Database initialized.")
@@ -57,7 +54,7 @@ def main() -> None:
     app.setApplicationName("RealSense Lab Capture")
     app.setOrganizationName("Lab")
 
-    # Load stylesheet
+    # Stylesheet is bundled inside the frozen app — use __file__ path
     qss_path = Path(__file__).parent / "app" / "ui" / "styles.qss"
     if qss_path.exists():
         app.setStyleSheet(qss_path.read_text(encoding="utf-8"))

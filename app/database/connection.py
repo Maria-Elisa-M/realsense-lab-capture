@@ -1,9 +1,9 @@
 """Database connection factory with WAL mode and foreign key enforcement."""
 import sqlite3
-import os
 from pathlib import Path
+from app.utils.app_dirs import DB_DIR
 
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "video_capture.db"
+DB_PATH = DB_DIR / "video_capture.db"
 
 
 def get_connection() -> sqlite3.Connection:
