@@ -96,6 +96,6 @@ if errorlevel 1 (
 echo.
 echo ============================================================
 echo  BUILD COMPLETE
-echo  Installer: %ROOT%installer\output\RealSenseCapture_Setup_v1.0.0.exe
+echo  Installer: %ROOT%installer\output\RealSenseCapture_Setup_v1.1.0.exe
 echo ============================================================
 pause

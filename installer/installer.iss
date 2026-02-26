@@ -3,7 +3,7 @@
 ; (Run from project root after PyInstaller has built dist\RealSenseCapture\)
 
 #define AppName      "RealSense Lab Capture"
-#define AppVersion   "1.0.0"
+#define AppVersion   "1.1.0"
 #define AppPublisher "Lab"
 #define AppExeName   "RealSenseCapture.exe"
 #define BuildDir     "..\dist\RealSenseCapture"

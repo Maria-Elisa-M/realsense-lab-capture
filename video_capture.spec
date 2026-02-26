@@ -14,7 +14,6 @@ a = Analysis(
     pathex=[],
     binaries=rs_binaries,
     datas=[
-        ('app/ui/styles.qss', 'app/ui'),   # stylesheet must ship with the app
         *rs_datas,
     ],
     hiddenimports=[
