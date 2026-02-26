@@ -52,8 +52,13 @@ class SessionHistoryScreen(QWidget):
         ])
         hh = self.table.horizontalHeader()
         hh.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
-        for col, w in [(0, 70), (1, 155), (2, 100), (3, 100), (4, 80), (5, 75), (7, 110)]:
+        hh.setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)
+        for col, w in [(0, 70), (1, 160), (2, 105), (3, 105), (4, 80), (5, 80), (7, 140)]:
             self.table.setColumnWidth(col, w)
+        vh = self.table.verticalHeader()
+        vh.setDefaultSectionSize(46)
+        vh.setMinimumSectionSize(46)
+        vh.setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(True)

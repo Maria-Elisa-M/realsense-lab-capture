@@ -33,14 +33,18 @@ class SessionReviewScreen(QWidget):
         self.table.setHorizontalHeaderLabels(
             ["Type", "Started", "Duration", "File Size", "File Path", ""]
         )
-        self.table.horizontalHeader().setSectionResizeMode(
-            4, QHeaderView.ResizeMode.Stretch
-        )
+        hh = self.table.horizontalHeader()
+        hh.setSectionResizeMode(4, QHeaderView.ResizeMode.Stretch)
+        hh.setSectionResizeMode(5, QHeaderView.ResizeMode.Fixed)
         self.table.setColumnWidth(0, 110)
-        self.table.setColumnWidth(1, 160)
+        self.table.setColumnWidth(1, 165)
         self.table.setColumnWidth(2, 90)
         self.table.setColumnWidth(3, 90)
-        self.table.setColumnWidth(5, 110)
+        self.table.setColumnWidth(5, 140)
+        vh = self.table.verticalHeader()
+        vh.setDefaultSectionSize(46)
+        vh.setMinimumSectionSize(46)
+        vh.setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         layout.addWidget(self.table)
@@ -90,6 +94,8 @@ class SessionReviewScreen(QWidget):
             )
             btn_open.setEnabled(os.path.exists(rec.file_path))
             self.table.setCellWidget(row, 5, btn_open)
+
+        self.table.resizeRowsToContents()
 
     def _go_new_session(self) -> None:
         mw = self.window()

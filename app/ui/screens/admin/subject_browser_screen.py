@@ -40,13 +40,17 @@ class SubjectBrowserScreen(QWidget):
         self.table.setHorizontalHeaderLabels(
             ["ID", "Subject ID", "Created", "Sessions", "Actions"]
         )
-        self.table.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeMode.Stretch
-        )
-        self.table.setColumnWidth(0, 50)
-        self.table.setColumnWidth(2, 110)
-        self.table.setColumnWidth(3, 110)
-        self.table.setColumnWidth(4, 100)
+        hh = self.table.horizontalHeader()
+        hh.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        hh.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(0, 45)
+        self.table.setColumnWidth(2, 105)
+        self.table.setColumnWidth(3, 75)
+        self.table.setColumnWidth(4, 250)
+        vh = self.table.verticalHeader()
+        vh.setDefaultSectionSize(46)
+        vh.setMinimumSectionSize(46)
+        vh.setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         layout.addWidget(self.table)
@@ -86,13 +90,13 @@ class SubjectBrowserScreen(QWidget):
 
             cell_widget = QWidget()
             cell_layout = QHBoxLayout(cell_widget)
-            cell_layout.setContentsMargins(2, 2, 2, 2)
-            cell_layout.setSpacing(4)
+            cell_layout.setContentsMargins(4, 4, 4, 4)
+            cell_layout.setSpacing(6)
             cell_layout.addWidget(btn_sessions)
             cell_layout.addWidget(btn_edit)
             self.table.setCellWidget(row, 4, cell_widget)
 
-        self.table.resizeColumnToContents(4)
+        self.table.resizeRowsToContents()
 
     def _on_new_subject(self) -> None:
         dlg = SubjectFormDialog(self)
@@ -162,8 +166,13 @@ class SubjectSessionsDialog(QDialog):
         ])
         hh = self.table.horizontalHeader()
         hh.setSectionResizeMode(6, QHeaderView.ResizeMode.Stretch)
-        for col, w in [(0, 65), (1, 150), (2, 100), (3, 100), (4, 75), (5, 75), (7, 110)]:
+        hh.setSectionResizeMode(7, QHeaderView.ResizeMode.Fixed)
+        for col, w in [(0, 65), (1, 150), (2, 105), (3, 105), (4, 80), (5, 80), (7, 140)]:
             self.table.setColumnWidth(col, w)
+        vh = self.table.verticalHeader()
+        vh.setDefaultSectionSize(46)
+        vh.setMinimumSectionSize(46)
+        vh.setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setAlternatingRowColors(True)

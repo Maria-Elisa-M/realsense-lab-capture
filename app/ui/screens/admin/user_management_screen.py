@@ -38,9 +38,17 @@ class UserManagementScreen(QWidget):
         self.table.setHorizontalHeaderLabels(
             ["ID", "Username", "Role", "Active", "Actions"]
         )
-        self.table.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.ResizeMode.Stretch
-        )
+        hh = self.table.horizontalHeader()
+        hh.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        hh.setSectionResizeMode(4, QHeaderView.ResizeMode.Fixed)
+        self.table.setColumnWidth(0, 45)
+        self.table.setColumnWidth(2, 90)
+        self.table.setColumnWidth(3, 65)
+        self.table.setColumnWidth(4, 250)
+        vh = self.table.verticalHeader()
+        vh.setDefaultSectionSize(46)
+        vh.setMinimumSectionSize(46)
+        vh.setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         layout.addWidget(self.table)
@@ -56,7 +64,8 @@ class UserManagementScreen(QWidget):
 
             actions = QWidget()
             act_layout = QHBoxLayout(actions)
-            act_layout.setContentsMargins(2, 2, 2, 2)
+            act_layout.setContentsMargins(4, 4, 4, 4)
+            act_layout.setSpacing(6)
 
             btn_pw = QPushButton("Change PW")
             btn_pw.clicked.connect(lambda checked, u=user: self._change_password(u))
@@ -73,6 +82,8 @@ class UserManagementScreen(QWidget):
             act_layout.addWidget(btn_pw)
             act_layout.addWidget(btn_toggle)
             self.table.setCellWidget(row, 4, actions)
+
+        self.table.resizeRowsToContents()
 
     def _on_add_user(self) -> None:
         dlg = AddUserDialog(self)
