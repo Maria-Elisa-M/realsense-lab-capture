@@ -3,7 +3,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QFrame, QSizePolicy, QApplication
 )
-from PyQt6.QtCore import QTimer, Qt
+from PyQt6.QtCore import QTimer, Qt, QSize
 from PyQt6.QtGui import QIcon
 
 
@@ -16,7 +16,7 @@ class RecordingControls(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedWidth(230)
+        self.setFixedWidth(260)
         self.setObjectName("recording_panel")
 
         self._elapsed_seconds = 0
@@ -117,14 +117,13 @@ class RecordingControls(QWidget):
     # ------------------------------------------------------------------ #
 
     def _btn(self, text: str, pixmap, object_name: str = "") -> QPushButton:
-        SP = QApplication.style().StandardPixmap
         btn = QPushButton(text)
         btn.setIcon(_icon(pixmap))
-        btn.setIconSize(btn.sizeHint())
+        btn.setIconSize(QSize(18, 18))
         if object_name:
             btn.setObjectName(object_name)
         btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        btn.setMinimumHeight(36)
+        btn.setMinimumHeight(40)
         return btn
 
     def _separator(self) -> QFrame:
